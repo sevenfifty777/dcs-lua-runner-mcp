@@ -105,8 +105,8 @@ If you received a pre-built version:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/dcs-lua-runner.git
-   cd dcs-lua-runner
+   git clone https://github.com/yourusername/dcs-lua-runner-mcp.git
+   cd dcs-lua-runner-mcp
    ```
 
 2. **Install dependencies:**
@@ -432,9 +432,10 @@ MIT License - Based on the DCS Lua Runner GUI project
 
 ## Credits
 
-- DCS Lua Runner GUI - Python application for DCS interaction
-- DCS Fiddle - Original DCS HTTP server implementation
-- Model Context Protocol - MCP SDK by Anthropic
+- Original DCS Fiddle: [JonathanTurnock](https://github.com/JonathanTurnock) and [john681611](https://github.com/john681611)
+- DCS Lua Runner VSCode Extension: [omltcat](https://github.com/omltcat)
+- GUI Implementation: Created for standalone Windows application
+- Model Context Protocol: MCP SDK by Anthropic
 
 ## Support
 
