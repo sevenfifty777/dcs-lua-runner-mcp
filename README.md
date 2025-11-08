@@ -104,7 +104,7 @@ If you received a pre-built version:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/dcs-lua-runner-mcp.git
+   git clone https://github.com/sevenfifty777/dcs-lua-runner-mcp.git
    cd dcs-lua-runner-mcp
    ```
 
