@@ -1,50 +1,16 @@
 {
-  "_comment": "DCS Lua Runner Settings Template - Copy this to dcs_lua_runner_settings.json and update with your values",
-  
-  "server_address": "127.0.0.1",
-  "server_port": 12080,
-  "server_address_gui": "127.0.0.1",
-  "server_port_gui": 12081,
-  "use_https": false,
-  "web_auth_username": "username",
-  "web_auth_password": "password",
-  "run_code_locally": true,
-  "run_in_mission_env": true,
-  "return_display_format": "lua",
-  
-  "_instructions": {
-    "local_setup": {
-      "description": "For local DCS server (most common)",
-      "settings": {
-        "server_address": "127.0.0.1",
-        "server_port": 12080,
-        "run_code_locally": true,
-        "use_https": false
-      }
-    },
-    "remote_setup": {
-      "description": "For remote DCS server",
-      "settings": {
-        "server_address": "your.remote.server.com or IP",
-        "server_port": 12080,
-        "run_code_locally": false,
-        "use_https": true,
-        "web_auth_username": "your_actual_username",
-        "web_auth_password": "your_strong_password"
-      },
-      "security_note": "ALWAYS use HTTPS for remote connections!"
-    },
-    "field_descriptions": {
-      "server_address": "IP or hostname of DCS Fiddle server (127.0.0.1 for local)",
-      "server_port": "Port for mission environment (default: 12080)",
-      "server_address_gui": "IP for GUI environment (usually same as server_address)",
-      "server_port_gui": "Port for GUI environment (default: 12081)",
-      "use_https": "Use HTTPS for encrypted connection (required for remote)",
-      "web_auth_username": "Username for DCS Fiddle authentication",
-      "web_auth_password": "Password for DCS Fiddle authentication",
-      "run_code_locally": "true = local server, false = remote server",
-      "run_in_mission_env": "true = mission scripting, false = GUI scripting",
-      "return_display_format": "lua or json - format for results display"
-    }
-  }
+    "server_address": "DCS_SERVER_IP",
+    "server_address_gui": "DCS_SERVER_IP",
+    "server_port": 12080,
+    "server_port_gui": 12081,
+    "use_https": false,
+    "web_auth_username": "your_username",
+    "web_auth_password": "your_password",
+    "run_code_locally": false,
+    "run_in_mission_env": true,
+    "return_display_format": "lua",
+    "window_width": 1589,
+    "window_height": 767,
+    "editor_font_size": 12,
+    "editor_font_family": "Consolas"
 }
