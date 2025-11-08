@@ -51,8 +51,7 @@ This MCP server provides the following tools for AI interaction with DCS:
 ## Prerequisites
 
 1. **DCS World** installed with DCS Fiddle server running
-2. **DCS Lua Runner GUI** application configured
-3. **Node.js** installed (for running the MCP server)
+2. **Node.js** installed (for running the MCP server)
 
 ## Configuration
 
@@ -91,10 +90,10 @@ The MCP server will automatically find and load the settings file from its own d
 
 If you received a pre-built version:
 
-1. Extract the `dcs-lua-runner` folder to your preferred location
+1. Extract the `dcs-lua-runner-mcp` folder to your preferred location
 2. Navigate to the folder and install dependencies:
    ```bash
-   cd dcs-lua-runner
+   cd dcs-lua-runner-mcp
    npm install
    npm run build
    ```
@@ -161,9 +160,9 @@ If you received a pre-built version:
    ```json
    {
      "mcpServers": {
-       "dcs-lua-runner": {
+       "dcs-lua-runner-mcp": {
          "command": "node",
-         "args": ["C:/absolute/path/to/dcs-lua-runner/build/index.js"]
+         "args": ["C:/absolute/path/to/dcs-lua-runner-mcp/build/index.js"]
        }
      }
    }
@@ -179,9 +178,9 @@ If you received a pre-built version:
    ```json
    {
      "mcpServers": {
-       "dcs-lua-runner": {
+       "dcs-lua-runner-mcp": {
          "command": "node",
-         "args": ["C:/absolute/path/to/dcs-lua-runner/build/index.js"]
+         "args": ["C:/absolute/path/to/dcs-lua-runner-mcp/build/index.js"]
        }
      }
    }
@@ -198,9 +197,9 @@ If you received a pre-built version:
    ```json
    {
      "mcpServers": {
-       "dcs-lua-runner": {
+       "dcs-lua-runner-mcp": {
          "command": "node",
-         "args": ["C:/absolute/path/to/dcs-lua-runner/build/index.js"],
+         "args": ["C:/absolute/path/to/dcs-lua-runner-mcp/build/index.js"],
          "env": {
            "DCS_SETTINGS_PATH": "C:/custom/path/to/dcs_lua_runner_settings.json"
          }
@@ -214,9 +213,9 @@ If you received a pre-built version:
    ```json
    {
      "mcpServers": {
-       "dcs-lua-runner": {
+       "dcs-lua-runner-mcp": {
          "command": "node",
-         "args": ["C:/absolute/path/to/dcs-lua-runner/build/index.js"],
+         "args": ["C:/absolute/path/to/dcs-lua-runner-mcp/build/index.js"],
          "env": {
            "DCS_SETTINGS_PATH": "C:/custom/path/to/dcs_lua_runner_settings.json"
          }
@@ -393,7 +392,7 @@ The MCP Inspector is a developer tool that allows you to test and debug your MCP
 ### Building from Source
 
 ```bash
-cd C:\{your_path}\dcs-lua-runner
+cd C:\{your_path}\dcs-lua-runner-mcp
 npm install
 npm run build
 ```
@@ -401,7 +400,7 @@ npm run build
 ### Project Structure
 
 ```
-dcs-lua-runner/
+dcs-lua-runner-mcp/
 ├── src/
 │   └── index.ts          # Main MCP server implementation
 ├── build/
