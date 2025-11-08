@@ -49,11 +49,23 @@ interface DCSSettings {
  * Load settings from the DCS Lua Runner settings file
  */
 function loadDCSSettings(): DCSSettings {
-  const settingsPath = process.env.DCS_SETTINGS_PATH || 
-    join(process.env.USERPROFILE || '', 'Documents', 'GitHub', 'dcs_lua_runner_gui', 'dcs_lua_runner_settings.json');
+  // Priority order for settings file location:
+  // 1. DCS_SETTINGS_PATH environment variable (if set)
+  // 2. dcs_lua_runner_settings.json in the MCP server directory
+  // 3. Fall back to defaults if file not found
+  
+  let settingsPath: string;
+  
+  if (process.env.DCS_SETTINGS_PATH) {
+    settingsPath = process.env.DCS_SETTINGS_PATH;
+  } else {
+    // Use settings file in the MCP server directory (parent of build/)
+    settingsPath = join(__dirname, '..', 'dcs_lua_runner_settings.json');
+  }
   
   try {
     const settingsData = readFileSync(settingsPath, 'utf-8');
+    console.error(`Loaded DCS settings from: ${settingsPath}`);
     return JSON.parse(settingsData);
   } catch (error) {
     console.error(`Warning: Could not load DCS settings from ${settingsPath}, using defaults`);

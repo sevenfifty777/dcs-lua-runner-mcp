@@ -56,12 +56,22 @@ This MCP server provides the following tools for AI interaction with DCS:
 
 ## Configuration
 
-The MCP server automatically reads settings from your DCS Lua Runner configuration file located at:
-```
-C:\Users\<username>\Documents\GitHub\dcs_lua_runner_gui\dcs_lua_runner_settings.json
-```
+The MCP server reads settings from `dcs_lua_runner_settings.json` in the following priority order:
 
-You can override the settings path with the `DCS_SETTINGS_PATH` environment variable.
+1. **Environment Variable** (if set): Path specified in `DCS_SETTINGS_PATH`
+2. **MCP Server Directory** (default): `dcs_lua_runner_settings.json` in the same folder as the MCP server
+3. **Fallback Defaults**: If no settings file is found, uses default localhost configuration
+
+### Quick Setup
+
+1. Copy the template file:
+   ```bash
+   cp dcs_lua_runner_settings.json.template dcs_lua_runner_settings.json
+   ```
+
+2. Edit the settings file with your DCS server details (the defaults work for most local setups)
+
+The MCP server will automatically find and load the settings file from its own directory.
 
 ### Settings Used
 
@@ -134,6 +144,12 @@ If you received a pre-built version:
 
 5. **Configure your MCP client:**
 
+   You have two options for settings file location:
+
+   **Option A: Settings in MCP Server Directory (Recommended)**
+   
+   Place `dcs_lua_runner_settings.json` in the same directory as the MCP server. The server will automatically find it.
+
    **For Cline (VS Code):**
    
    Edit `cline_mcp_settings.json` located at:
@@ -147,10 +163,7 @@ If you received a pre-built version:
      "mcpServers": {
        "dcs-lua-runner": {
          "command": "node",
-         "args": ["/absolute/path/to/dcs-lua-runner/build/index.js"],
-         "env": {
-           "DCS_SETTINGS_PATH": "/absolute/path/to/dcs_lua_runner_settings.json"
-         }
+         "args": ["C:/absolute/path/to/dcs-lua-runner/build/index.js"]
        }
      }
    }
@@ -168,9 +181,44 @@ If you received a pre-built version:
      "mcpServers": {
        "dcs-lua-runner": {
          "command": "node",
-         "args": ["/absolute/path/to/dcs-lua-runner/build/index.js"],
+         "args": ["C:/absolute/path/to/dcs-lua-runner/build/index.js"]
+       }
+     }
+   }
+   ```
+
+   ---
+
+   **Option B: Custom Settings Location**
+   
+   If you want to place `dcs_lua_runner_settings.json` in a different location (e.g., shared across multiple installations), use the `DCS_SETTINGS_PATH` environment variable.
+
+   **For Cline (VS Code):**
+   
+   ```json
+   {
+     "mcpServers": {
+       "dcs-lua-runner": {
+         "command": "node",
+         "args": ["C:/absolute/path/to/dcs-lua-runner/build/index.js"],
          "env": {
-           "DCS_SETTINGS_PATH": "/absolute/path/to/dcs_lua_runner_settings.json"
+           "DCS_SETTINGS_PATH": "C:/custom/path/to/dcs_lua_runner_settings.json"
+         }
+       }
+     }
+   }
+   ```
+
+   **For Claude Desktop:**
+   
+   ```json
+   {
+     "mcpServers": {
+       "dcs-lua-runner": {
+         "command": "node",
+         "args": ["C:/absolute/path/to/dcs-lua-runner/build/index.js"],
+         "env": {
+           "DCS_SETTINGS_PATH": "C:/custom/path/to/dcs_lua_runner_settings.json"
          }
        }
      }
@@ -290,6 +338,55 @@ end
 **Error**: Lua execution errors
 - **Solution**: Check Lua syntax and DCS API availability
 - Some functions only work in mission environment
+
+## Testing with MCP Inspector
+
+The MCP Inspector is a developer tool that allows you to test and debug your MCP server interactively before integrating it with an AI client.
+
+### Running the Inspector
+
+1. **Ensure the project is built:**
+   ```bash
+   npm run build
+   ```
+
+2. **Start the MCP Inspector:**
+   ```bash
+   npm run inspector
+   ```
+
+3. **Using the Inspector:**
+   - The inspector will open in your default web browser
+   - You'll see an interactive GUI showing:
+     - **Available Tools**: List of all 8 DCS interaction tools
+     - **Tool Parameters**: Input fields for each tool's parameters
+     - **Request/Response**: Real-time display of MCP communication
+     - **Test Results**: Output from each tool execution
+
+4. **Testing Individual Tools:**
+   - Select a tool from the list (e.g., `get_mission_info`)
+   - Fill in required parameters (if any)
+   - Click "Execute" to test the tool
+   - View the response in JSON format
+
+5. **Example Test Scenarios:**
+   - **Test connection**: Use `get_mission_info` to verify DCS connection
+   - **Test Lua execution**: Use `execute_lua` with simple code like `return "Hello from DCS"`
+   - **Test spawning**: Use `spawn_unit` with test coordinates
+   - **Debug errors**: View detailed error messages and stack traces
+
+### Inspector Benefits
+
+- **No AI client needed**: Test without configuring Cline or Claude Desktop
+- **Interactive debugging**: See requests and responses in real-time
+- **Parameter validation**: Verify tool inputs before integration
+- **Quick iteration**: Test changes immediately after rebuilding
+
+### Notes
+
+- The inspector runs the MCP server in a test environment
+- You still need DCS World running with the Fiddle server for actual DCS interaction
+- The inspector uses the same `dcs_lua_runner_settings.json` configuration
 
 ## Development
 
