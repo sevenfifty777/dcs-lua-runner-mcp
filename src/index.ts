@@ -259,7 +259,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "spawn_unit",
-        description: "Spawn a new unit in the mission at specified coordinates",
+        description: "Spawn a new unit in the mission at specified coordinates. Can use DCS coordinates (x, z) OR real-world coordinates (latitude/longitude or MGRS).",
         inputSchema: {
           type: "object",
           properties: {
@@ -278,11 +278,23 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             x: {
               type: "number",
-              description: "X coordinate (meters)"
+              description: "DCS X coordinate (meters). Use this OR lat/lon/mgrs."
             },
             z: {
               type: "number",
-              description: "Z coordinate (meters)"
+              description: "DCS Z coordinate (meters). Use this OR lat/lon/mgrs."
+            },
+            latitude: {
+              type: "number",
+              description: "Latitude in decimal degrees. Use with longitude instead of x/z."
+            },
+            longitude: {
+              type: "number",
+              description: "Longitude in decimal degrees. Use with latitude instead of x/z."
+            },
+            mgrs: {
+              type: "string",
+              description: "MGRS coordinate string (e.g., '38TMK1234567890'). Use instead of x/z or lat/lon."
             },
             heading: {
               type: "number",
@@ -290,7 +302,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               default: 0
             }
           },
-          required: ["type", "name", "coalition", "x", "z"]
+          required: ["type", "name", "coalition"]
         }
       },
       {
@@ -326,6 +338,55 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: "object",
           properties: {},
+        }
+      },
+      {
+        name: "convert_coordinates",
+        description: "Convert real-world coordinates (Latitude/Longitude or MGRS) to DCS coordinate system (X, Z). Use this when you have real-world coordinates and need DCS coordinates for spawning or positioning.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            latitude: {
+              type: "number",
+              description: "Latitude in decimal degrees. Use with longitude."
+            },
+            longitude: {
+              type: "number",
+              description: "Longitude in decimal degrees. Use with latitude."
+            },
+            mgrs: {
+              type: "string",
+              description: "MGRS coordinate string (e.g., '38TMK1234567890'). Use instead of lat/lon."
+            },
+            altitude: {
+              type: "number",
+              description: "Altitude in meters (optional, defaults to 0)",
+              default: 0
+            }
+          }
+        }
+      },
+      {
+        name: "convert_dcs_to_ll",
+        description: "Convert DCS coordinates (X, Z) to real-world Latitude/Longitude. Use this when you have DCS coordinates and need to know the real-world location.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            x: {
+              type: "number",
+              description: "DCS X coordinate (meters)"
+            },
+            z: {
+              type: "number",
+              description: "DCS Z coordinate (meters)"
+            },
+            y: {
+              type: "number",
+              description: "DCS Y coordinate/altitude (meters, optional)",
+              default: 0
+            }
+          },
+          required: ["x", "z"]
         }
       }
     ]
@@ -465,12 +526,86 @@ return units
         const unitType = String(args?.type || '');
         const unitName = String(args?.name || '');
         const coal = String(args?.coalition || 'blue');
-        const x = Number(args?.x || 0);
-        const z = Number(args?.z || 0);
         const heading = Number(args?.heading || 0);
         
         if (!unitType || !unitName) {
           throw new McpError(ErrorCode.InvalidParams, "Unit type and name are required");
+        }
+
+        // Handle coordinate conversion if needed
+        let x: number, z: number;
+        
+        if (args?.mgrs) {
+          // Convert MGRS to DCS coordinates
+          const mgrsStr = String(args.mgrs);
+          const escapedMgrs = mgrsStr.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'");
+          const conversionCode = `
+local mgrsStr = "${escapedMgrs}"
+local mgrsClean = mgrsStr:gsub("%s+", "")
+
+-- Extract MGRS components
+local zone, band, digraph, coords = mgrsClean:match("^(%d+)([A-Z])([A-Z][A-Z])(.*)$")
+if not zone or not band or not digraph then
+  return { error = "Invalid MGRS format: " .. mgrsStr }
+end
+
+local coordLen = #coords
+local halfLen = math.floor(coordLen / 2)
+local easting = tonumber(coords:sub(1, halfLen))
+local northing = tonumber(coords:sub(halfLen + 1))
+
+if not easting or not northing then
+  return { error = "Invalid MGRS coordinates: " .. mgrsStr }
+end
+
+local eastingStr = string.format("%05d", easting * math.pow(10, 5 - halfLen))
+local northingStr = string.format("%05d", northing * math.pow(10, 5 - halfLen))
+
+local mgrsTable = {
+  UTMZone = zone .. band,
+  MGRSDigraph = digraph,
+  Easting = tonumber(eastingStr),
+  Northing = tonumber(northingStr)
+}
+
+local lat, lon = coord.MGRStoLL(mgrsTable)
+if not lat or not lon then
+  return { error = "MGRS conversion failed for: " .. mgrsStr }
+end
+
+local alt = 0
+local vec3 = coord.LLtoLO(lat, lon, alt)
+return {x = vec3.x, z = vec3.z, lat = lat, lon = lon}
+`;
+          const result = await dcsClient.runLua(conversionCode, executionSettings);
+          if (!result.success || result.result.error) {
+            throw new McpError(ErrorCode.InternalError, `MGRS conversion failed: ${result.result.error || result.result}`);
+          }
+          x = result.result.x;
+          z = result.result.z;
+        } else if (args?.latitude !== undefined && args?.longitude !== undefined) {
+          // Convert Lat/Long to DCS coordinates
+          const lat = Number(args.latitude);
+          const lon = Number(args.longitude);
+          const conversionCode = `
+local lat = ${lat}
+local lon = ${lon}
+local alt = 0
+local vec3 = coord.LLtoLO(lat, lon, alt)
+return {x = vec3.x, z = vec3.z}
+`;
+          const result = await dcsClient.runLua(conversionCode, executionSettings);
+          if (!result.success) {
+            throw new McpError(ErrorCode.InternalError, `Lat/Long conversion failed: ${result.result}`);
+          }
+          x = result.result.x;
+          z = result.result.z;
+        } else if (args?.x !== undefined && args?.z !== undefined) {
+          // Use DCS coordinates directly
+          x = Number(args.x);
+          z = Number(args.z);
+        } else {
+          throw new McpError(ErrorCode.InvalidParams, "Must provide either x/z, latitude/longitude, or mgrs coordinates");
         }
         
         const coalitionId = coal === 'red' ? 'coalition.side.RED' : 
@@ -577,6 +712,136 @@ for _, coal in ipairs({coalition.side.RED, coalition.side.BLUE, coalition.side.N
   end
 end
 return aircraft
+`;
+        const result = await dcsClient.runLua(code, executionSettings);
+        
+        return {
+          content: [{
+            type: "text",
+            text: result.success
+              ? JSON.stringify(result.result, null, 2)
+              : `Error: ${result.result}`
+          }],
+          isError: !result.success
+        };
+      }
+
+      case "convert_coordinates": {
+        let code: string;
+        
+        if (args?.mgrs) {
+          // Escape the MGRS string properly for Lua
+          const mgrsStr = String(args.mgrs);
+          const escapedMgrs = mgrsStr.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'");
+          
+          // Parse MGRS string and convert to proper table format
+          code = `
+-- Parse and convert MGRS to Lat/Long
+local mgrsStr = "${escapedMgrs}"
+local mgrsClean = mgrsStr:gsub("%s+", "")
+
+-- Extract components from MGRS string
+local zone, band, digraph, coords = mgrsClean:match("^(%d+)([A-Z])([A-Z][A-Z])(.*)$")
+
+if not zone or not band or not digraph then
+  return { error = "Invalid MGRS format: " .. mgrsStr }
+end
+
+-- Split remaining coordinates in half for easting/northing
+local coordLen = #coords
+local halfLen = math.floor(coordLen / 2)
+local easting = tonumber(coords:sub(1, halfLen))
+local northing = tonumber(coords:sub(halfLen + 1))
+
+if not easting or not northing then
+  return { error = "Invalid MGRS coordinates: " .. mgrsStr }
+end
+
+-- Pad to 5 digits if needed (MGRS precision)
+local eastingStr = string.format("%05d", easting * math.pow(10, 5 - halfLen))
+local northingStr = string.format("%05d", northing * math.pow(10, 5 - halfLen))
+
+-- Create MGRS table for coord.MGRStoLL
+local mgrsTable = {
+  UTMZone = zone .. band,
+  MGRSDigraph = digraph,
+  Easting = tonumber(eastingStr),
+  Northing = tonumber(northingStr)
+}
+
+local lat, lon = coord.MGRStoLL(mgrsTable)
+if not lat or not lon then
+  return { error = "MGRS conversion failed for: " .. mgrsStr }
+end
+
+-- Convert Lat/Long to DCS coordinates
+local alt = ${Number(args?.altitude || 0)}
+local vec3 = coord.LLtoLO(lat, lon, alt)
+return {
+  x = vec3.x,
+  y = vec3.y,
+  z = vec3.z,
+  latitude = lat,
+  longitude = lon,
+  mgrs = mgrsStr,
+  altitude = alt
+}
+`;
+        } else if (args?.latitude !== undefined && args?.longitude !== undefined) {
+          // Convert Lat/Long to DCS coordinates
+          const lat = Number(args.latitude);
+          const lon = Number(args.longitude);
+          const alt = Number(args?.altitude || 0);
+          code = `
+local lat = ${lat}
+local lon = ${lon}
+local alt = ${alt}
+local vec3 = coord.LLtoLO(lat, lon, alt)
+return {
+  x = vec3.x,
+  y = vec3.y,
+  z = vec3.z,
+  latitude = lat,
+  longitude = lon
+}
+`;
+        } else {
+          throw new McpError(ErrorCode.InvalidParams, "Must provide either latitude/longitude or mgrs coordinates");
+        }
+
+        const result = await dcsClient.runLua(code, executionSettings);
+        
+        return {
+          content: [{
+            type: "text",
+            text: result.success
+              ? JSON.stringify(result.result, null, 2)
+              : `Error: ${result.result}`
+          }],
+          isError: !result.success
+        };
+      }
+
+      case "convert_dcs_to_ll": {
+        const x = Number(args?.x);
+        const z = Number(args?.z);
+        const y = Number(args?.y || 0);
+        
+        if (x === undefined || z === undefined) {
+          throw new McpError(ErrorCode.InvalidParams, "DCS x and z coordinates are required");
+        }
+
+        const code = `
+local vec3 = {x = ${x}, y = ${y}, z = ${z}}
+local lat, lon, alt = coord.LOtoLL(vec3)
+return {
+  latitude = lat,
+  longitude = lon,
+  altitude = alt,
+  dcs_x = ${x},
+  dcs_y = ${y},
+  dcs_z = ${z}
+}
 `;
         const result = await dcsClient.runLua(code, executionSettings);
         
