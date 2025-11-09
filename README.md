@@ -32,8 +32,9 @@ This MCP server provides the following tools for AI interaction with DCS:
 
 5. **spawn_unit** - Spawn new units in the mission
    - Ground units or vehicles
-   - Specify position, heading, coalition
-   - Custom unit names
+   - Specify position using DCS coordinates, Lat/Long, or MGRS
+   - Custom unit names and heading
+   - Automatic coordinate conversion
 
 6. **send_message** - Display messages in DCS
    - Send text messages to all players
@@ -47,6 +48,16 @@ This MCP server provides the following tools for AI interaction with DCS:
    - All airborne units
    - Positions and altitudes
    - Coalition information
+
+9. **convert_coordinates** - Convert real-world coordinates to DCS (NEW)
+   - Convert Lat/Long to DCS X/Z coordinates
+   - Convert MGRS to DCS coordinates
+   - Support for altitude/elevation
+
+10. **convert_dcs_to_ll** - Convert DCS coordinates to Lat/Long (NEW)
+    - Convert DCS X/Z to real-world coordinates
+    - Get Latitude/Longitude from DCS positions
+    - Useful for mission planning and analysis
 
 ## Prerequisites
 
@@ -256,9 +267,38 @@ Once the MCP server is running, you can ask your AI assistant to interact with D
 ```
 
 ### Spawn Units
+
+**Using DCS coordinates:**
 ```
 "Spawn a T-72B tank at coordinates x=100000, z=200000 for the red coalition"
 "Create an M-1 Abrams at position 150000, 250000 facing north"
+```
+
+**Using Latitude/Longitude:**
+```
+"Spawn an M-1 Abrams at latitude 42.3601, longitude 43.3517 for the blue coalition"
+"Create a tank at lat/lon 35.5, 45.8"
+```
+
+**Using MGRS coordinates:**
+```
+"Spawn a T-72B at MGRS 37SCA4022505929 for the red coalition"
+"Create a tank at MGRS '38T MK 12345 67890' heading 90 degrees"
+```
+
+### Convert Coordinates
+
+**Convert real-world coordinates to DCS:**
+```
+"Convert latitude 42.3601, longitude 43.3517 to DCS coordinates"
+"Convert MGRS 38TMK1234567890 to DCS coordinates"
+"What are the DCS coordinates for MGRS '37 S CA 40225 05929'?"
+```
+
+**Convert DCS coordinates to Lat/Long:**
+```
+"Convert DCS coordinates x=100000, z=200000 to latitude and longitude"
+"What's the real-world location of DCS position x=50000, z=75000?"
 ```
 
 ### Send Messages
@@ -278,6 +318,66 @@ Once the MCP server is running, you can ask your AI assistant to interact with D
 "List all red coalition aircraft"
 "What aircraft are currently in the mission?"
 ```
+
+## 🌍 Coordinate Conversion
+
+The MCP server supports automatic coordinate conversion between real-world coordinate systems and DCS world coordinates.
+
+### Supported Coordinate Systems
+
+**DCS World Coordinates:**
+- Native X, Z coordinate system (meters from map origin)
+- Y coordinate for altitude
+
+**Real-World Coordinates:**
+- **Latitude/Longitude**: Decimal degrees format (e.g., 42.3601, 43.3517)
+- **MGRS (Military Grid Reference System)**: Standard military coordinate format
+  - Supports formats with or without spaces: `38TMK1234567890` or `38T MK 12345 67890`
+  - Full format: Zone + Band + Digraph + Easting + Northing (e.g., `37SCA4022505929`)
+
+### Coordinate Conversion Tools
+
+#### convert_coordinates
+Converts real-world coordinates (Lat/Long or MGRS) to DCS world coordinates.
+
+**Example usage:**
+```
+"Convert latitude 42.3601, longitude 43.3517 to DCS coordinates"
+"Convert MGRS 38TMK1234567890 to DCS coordinates"
+```
+
+Returns DCS X, Z coordinates plus the original coordinates for reference.
+
+#### convert_dcs_to_ll
+Converts DCS world coordinates to real-world Latitude/Longitude.
+
+**Example usage:**
+```
+"Convert DCS coordinates x=100000, z=200000 to latitude and longitude"
+"What's the real-world location of x=50000, z=75000?"
+```
+
+Returns Latitude and Longitude in decimal degrees.
+
+### Enhanced spawn_unit Tool
+
+The `spawn_unit` tool accepts coordinates in three different formats:
+
+1. **DCS Coordinates** (traditional): `x` and `z` parameters
+2. **Latitude/Longitude**: `latitude` and `longitude` parameters
+3. **MGRS**: `mgrs` parameter (e.g., "38TMK1234567890" or "38T MK 12345 67890")
+
+The server automatically converts real-world coordinates to DCS coordinates before spawning.
+
+### MGRS Format Support
+
+All these MGRS formats are supported:
+- `38TMK1234567890` (no spaces, 10-digit precision)
+- `38T MK 12345 67890` (with spaces)
+- `37SCA4022505929` (different zone)
+- `37 S CA 40225 05929` (with spaces)
+
+The parser automatically handles spaces and extracts all required components (UTM Zone, Band, MGRS Digraph, Easting, Northing) for accurate conversion.
 
 ## DCS Setup Requirements
 
