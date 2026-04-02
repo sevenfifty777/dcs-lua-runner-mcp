@@ -1,6 +1,6 @@
 {
   "name": "dcs-lua-runner",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MCP server to interact with DCS environment",
   "license": "MIT",
   "private": true,
@@ -18,8 +18,8 @@
     "inspector": "npx @modelcontextprotocol/inspector build/index.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "0.6.0",
-    "axios": "^1.12.2"
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "axios": "1.14.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",

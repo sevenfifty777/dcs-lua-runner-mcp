@@ -484,6 +484,45 @@ To add new DCS interaction tools:
 - **Code Validation**: All Lua code is base64-encoded before transmission
 - **DCS Security**: Requires DCS desanitization (understand the risks!)
 
+## ⚠️ Dependency Security Warning
+
+> **Before installing or running any release of this project — including pre-built distributions — always verify that the bundled dependencies have no known vulnerabilities.**
+
+The npm ecosystem is an active target for supply chain attacks. New vulnerabilities can be discovered **at any time after a release is published**, meaning a package that was safe on release day may become dangerous weeks or months later.
+
+### What to check before use
+
+1. **Run an audit on the installed packages:**
+   ```bash
+   npm audit
+   ```
+   If any high or critical vulnerabilities are reported, **do not use the release until they are resolved**.
+
+2. **Cross-check dependency versions against known incidents:**
+   - Check [socket.dev](https://socket.dev) or [snyk.io](https://snyk.io/advisor/npm-package) for the exact versions in `package-lock.json`
+   - Be especially alert to packages that may have been **compromised after release** (e.g., the [axios supply chain attack of March 2026](https://socket.dev/blog/axios-npm-package-compromised) which affected `axios@1.14.1` — a version that looked like a routine patch release)
+
+3. **Treat pre-built distributions with extra caution:**
+   - The bundled `node_modules/` in a ZIP release is a snapshot in time
+   - Run `npm install` fresh from `package-lock.json` rather than using the bundled `node_modules` when possible
+   - Verify the `package-lock.json` has **exact pinned versions** (no `^` or `~` ranges for direct dependencies)
+
+4. **If in doubt, rebuild from source:**
+   ```bash
+   git clone https://github.com/sevenfifty777/dcs-lua-runner-mcp.git
+   cd dcs-lua-runner-mcp
+   npm install
+   npm audit
+   npm run build
+   ```
+
+### This release's dependency pins
+
+| Package | Pinned Version | Notes |
+|---|---|---|
+| `@modelcontextprotocol/sdk` | `1.29.0` | Patched ReDoS + DNS rebinding CVEs |
+| `axios` | `1.14.0` | Patched DoS CVE; `1.14.1` was malicious (supply chain attack) |
+
 ## License
 
 MIT License - Based on the DCS Lua Runner GUI project
