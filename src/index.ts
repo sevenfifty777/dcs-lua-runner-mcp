@@ -354,6 +354,52 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: "object",
           properties: {},
         }
+      },
+      {
+        name: "convert_coordinates",
+        description: "Convert real-world Latitude/Longitude coordinates to DCS X/Z coordinates using the theatre's coordinate system",
+        inputSchema: {
+          type: "object",
+          properties: {
+            latitude: {
+              type: "number",
+              description: "Latitude in decimal degrees (e.g. 41.12345)"
+            },
+            longitude: {
+              type: "number",
+              description: "Longitude in decimal degrees (e.g. 44.98765)"
+            },
+            altitude: {
+              type: "number",
+              description: "Altitude in meters above sea level (optional, default 0)",
+              default: 0
+            }
+          },
+          required: ["latitude", "longitude"]
+        }
+      },
+      {
+        name: "convert_dcs_to_ll",
+        description: "Convert DCS X/Z coordinates to real-world Latitude/Longitude",
+        inputSchema: {
+          type: "object",
+          properties: {
+            x: {
+              type: "number",
+              description: "DCS X coordinate (meters)"
+            },
+            z: {
+              type: "number",
+              description: "DCS Z coordinate (meters)"
+            },
+            y: {
+              type: "number",
+              description: "DCS Y coordinate / altitude in meters (optional, default 0)",
+              default: 0
+            }
+          },
+          required: ["x", "z"]
+        }
       }
     ]
   };
@@ -693,6 +739,56 @@ return aircraft
         };
       }
       
+      case "convert_coordinates": {
+        const lat = Number(args?.latitude || 0);
+        const lon = Number(args?.longitude || 0);
+        const alt = Number(args?.altitude || 0);
+        const code = `
+local pos = coord.LLtoLO(${lat}, ${lon}, ${alt})
+return {
+  x = pos.x,
+  y = pos.y,
+  z = pos.z,
+  input = { latitude = ${lat}, longitude = ${lon}, altitude = ${alt} }
+}
+`;
+        const result = await dcsClient.runLua(code, executionSettings);
+        return {
+          content: [{
+            type: "text",
+            text: result.success
+              ? JSON.stringify(result.result, null, 2)
+              : `Error: ${result.result}`
+          }],
+          isError: !result.success
+        };
+      }
+
+      case "convert_dcs_to_ll": {
+        const x = Number(args?.x || 0);
+        const z = Number(args?.z || 0);
+        const y = Number(args?.y || 0);
+        const code = `
+local lat, lon, alt = coord.LOtoLL({x = ${x}, y = ${y}, z = ${z}})
+return {
+  latitude = lat,
+  longitude = lon,
+  altitude = alt,
+  input = { x = ${x}, y = ${y}, z = ${z} }
+}
+`;
+        const result = await dcsClient.runLua(code, executionSettings);
+        return {
+          content: [{
+            type: "text",
+            text: result.success
+              ? JSON.stringify(result.result, null, 2)
+              : `Error: ${result.result}`
+          }],
+          isError: !result.success
+        };
+      }
+
       default:
         throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
     }
