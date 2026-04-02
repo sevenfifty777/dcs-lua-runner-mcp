@@ -274,7 +274,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             coalition: {
               type: "string",
               enum: ["red", "blue", "neutral"],
-              description: "Coalition for the unit"
+              description: "Coalition for the unit. Determines default country if 'country' is not specified."
+            },
+            country: {
+              type: "string",
+              enum: [
+                "USA", "UK", "FRANCE", "GERMANY", "CANADA", "AUSTRALIA", "TURKEY",
+                "SPAIN", "THE_NETHERLANDS", "BELGIUM", "NORWAY", "DENMARK", "ISRAEL",
+                "ITALY", "GREECE", "POLAND", "SOUTH_KOREA", "JAPAN", "SAUDI_ARABIA",
+                "UNITED_ARAB_EMIRATES", "QATAR", "KUWAIT", "BAHRAIN", "JORDAN",
+                "EGYPT", "GEORGIA", "UKRAINE", "CJTF_BLUE",
+                "RUSSIA", "CHINA", "IRAN", "NORTH_KOREA", "SYRIA", "BELARUS",
+                "SOUTH_OSETIA", "ABKHAZIA", "IRAQ", "YEMEN", "LIBYA", "VENEZUELA",
+                "INSURGENTS", "CJTF_RED",
+                "UN_PEACEKEEPERS", "SWITZERLAND", "SWEDEN", "FINLAND"
+              ],
+              description: "Specific country for the unit (overrides coalition default). Use CJTF_BLUE or CJTF_RED for combined joint task forces."
             },
             x: {
               type: "number",
@@ -559,10 +574,11 @@ return {x = vec3.x, z = vec3.z}
           throw new McpError(ErrorCode.InvalidParams, "Must provide either x/z, latitude/longitude, or mgrs coordinates");
         }
         
-        // country.id enum: RUSSIA=0, USA=2; determines coalition automatically
-        const countryEnum = coal === 'red' ? 'country.id.RUSSIA' : 
-                            coal === 'blue' ? 'country.id.USA' : 
-                            'country.id.INSURGENTS';
+        // Resolve country enum: explicit country param overrides coalition default
+        const countryName = args?.country
+          ? String(args.country).toUpperCase()
+          : coal === 'red' ? 'RUSSIA' : coal === 'blue' ? 'USA' : 'INSURGENTS';
+        const countryEnum = `country.id.${countryName}`;
         
         const code = `
 local groupData = {
