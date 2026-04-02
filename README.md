@@ -49,16 +49,6 @@ This MCP server provides the following tools for AI interaction with DCS:
    - Positions and altitudes
    - Coalition information
 
-9. **convert_coordinates** - Convert real-world coordinates to DCS (NEW)
-   - Convert Lat/Long to DCS X/Z coordinates
-   - Convert MGRS to DCS coordinates
-   - Support for altitude/elevation
-
-10. **convert_dcs_to_ll** - Convert DCS coordinates to Lat/Long (NEW)
-    - Convert DCS X/Z to real-world coordinates
-    - Get Latitude/Longitude from DCS positions
-    - Useful for mission planning and analysis
-
 ## Prerequisites
 
 1. **DCS World** installed with DCS Fiddle server running
@@ -319,6 +309,14 @@ Once the MCP server is running, you can ask your AI assistant to interact with D
 "What aircraft are currently in the mission?"
 ```
 
+### Convert Coordinates
+```
+"Convert latitude 41.123, longitude 44.987 to DCS coordinates"
+"What are the DCS X/Z coordinates for lat 51.5, lon 37.2?"
+"Convert DCS coordinates X=100000, Z=200000 to latitude/longitude"
+"What is the real-world position of the unit at DCS X=50000, Z=150000?"
+```
+
 ## 🌍 Coordinate Conversion
 
 The MCP server supports automatic coordinate conversion between real-world coordinate systems and DCS world coordinates.
@@ -381,28 +379,69 @@ The parser automatically handles spaces and extracts all required components (UT
 
 ## DCS Setup Requirements
 
+> ⚠️ **Security Notice**: Setting up DCS Fiddle requires disabling DCS sandboxing and, optionally, exposing a network port. Read [DCS_SetUp_Risks.md](DCS_SetUp_Risks.md) for a full risk assessment and mandatory security measures before proceeding.
+
 ### 1. DCS Fiddle Server Installation
 
-Ensure the DCS Fiddle server script (`dcs-fiddle-server.lua`) is installed in:
+#### Step 1 — Locate your Saved Games folder
+
+DCS uses a folder under Windows `Saved Games` to store user scripts. The exact name depends on your DCS branch:
+
+| DCS Branch | Saved Games Folder |
+|---|---|
+| DCS World (stable) | `%USERPROFILE%\Saved Games\DCS` |
+| DCS World OpenBeta | `%USERPROFILE%\Saved Games\DCS.openbeta` |
+
+Open File Explorer and navigate to the correct path, e.g.:
 ```
-%USERPROFILE%\Saved Games\DCS\Scripts\Hooks\
+C:\Users\<YourUser>\Saved Games\DCS
 ```
+
+#### Step 2 — Create the Hooks folder (if it does not exist)
+
+Inside your Saved Games DCS folder, create the following folder structure if it is not already there:
+```
+Saved Games\DCS\Scripts\Hooks\
+```
+
+On Windows you can do this from PowerShell:
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\Saved Games\DCS\Scripts\Hooks"
+```
+> For OpenBeta replace `DCS` with `DCS.openbeta`.
+
+#### Step 3 — Copy the server script
+
+Copy `dcs-fiddle-server.lua` from this repository into the Hooks folder:
+```powershell
+Copy-Item ".\dcs-fiddle-server.lua" "$env:USERPROFILE\Saved Games\DCS\Scripts\Hooks\"
+```
+
+The final path should look like:
+```
+%USERPROFILE%\Saved Games\DCS\Scripts\Hooks\dcs-fiddle-server.lua
+```
+
+#### Step 4 — Verify the script is loaded
+
+After launching DCS, open `%USERPROFILE%\Saved Games\DCS\Logs\dcs.log` and search for:
+```
+DCS Fiddle successfully initialized
+```
+If you see this line the server is running and listening on ports **12080** (mission environment) and **12081** (GUI environment).
+
+> **Note**: The Hooks folder is loaded by DCS at startup for both the main menu (GUI environment) and in-mission. You do **not** need to add anything to `autoexec.cfg`.
 
 ### 2. DCS Desanitization
 
-⚠️ **Security Warning**: This requires removing DCS security restrictions.
+⚠️ **Security Warning**: This step disables DCS sandboxing and grants scripts full system access. See [DCS_SetUp_Risks.md](DCS_SetUp_Risks.md) for the full risk details and how to restore security afterwards.
 
-Edit `DCS_INSTALL\Scripts\MissionScripting.lua` and comment out these lines:
+Edit `DCS_INSTALL\Scripts\MissionScripting.lua` and comment out these two lines:
 
 ```lua
-do
-    sanitizeModule('os')
-    sanitizeModule('io')
-    sanitizeModule('lfs')
---  _G['require'] = nil      -- Comment this line
+--  _G['require'] = nil      -- comment this out
     _G['loadlib'] = nil
---  _G['package'] = nil      -- Comment this line
-end
+--  _G['package'] = nil      -- comment this out
 ```
 
 ### 3. Start DCS
@@ -457,7 +496,7 @@ The MCP Inspector is a developer tool that allows you to test and debug your MCP
 3. **Using the Inspector:**
    - The inspector will open in your default web browser
    - You'll see an interactive GUI showing:
-     - **Available Tools**: List of all 8 DCS interaction tools
+     - **Available Tools**: List of all 10 DCS interaction tools
      - **Tool Parameters**: Input fields for each tool's parameters
      - **Request/Response**: Real-time display of MCP communication
      - **Test Results**: Output from each tool execution
@@ -524,6 +563,45 @@ To add new DCS interaction tools:
 - **Remote Execution**: Requires authentication (username/password)
 - **Code Validation**: All Lua code is base64-encoded before transmission
 - **DCS Security**: Requires DCS desanitization (understand the risks!)
+
+## ⚠️ Dependency Security Warning
+
+> **Before installing or running any release of this project — including pre-built distributions — always verify that the bundled dependencies have no known vulnerabilities.**
+
+The npm ecosystem is an active target for supply chain attacks. New vulnerabilities can be discovered **at any time after a release is published**, meaning a package that was safe on release day may become dangerous weeks or months later.
+
+### What to check before use
+
+1. **Run an audit on the installed packages:**
+   ```bash
+   npm audit
+   ```
+   If any high or critical vulnerabilities are reported, **do not use the release until they are resolved**.
+
+2. **Cross-check dependency versions against known incidents:**
+   - Check [socket.dev](https://socket.dev) or [snyk.io](https://snyk.io/advisor/npm-package) for the exact versions in `package-lock.json`
+   - Be especially alert to packages that may have been **compromised after release** (e.g., the [axios supply chain attack of March 2026](https://socket.dev/blog/axios-npm-package-compromised) which affected `axios@1.14.1` — a version that looked like a routine patch release)
+
+3. **Treat pre-built distributions with extra caution:**
+   - The bundled `node_modules/` in a ZIP release is a snapshot in time
+   - Run `npm install` fresh from `package-lock.json` rather than using the bundled `node_modules` when possible
+   - Verify the `package-lock.json` has **exact pinned versions** (no `^` or `~` ranges for direct dependencies)
+
+4. **If in doubt, rebuild from source:**
+   ```bash
+   git clone https://github.com/sevenfifty777/dcs-lua-runner-mcp.git
+   cd dcs-lua-runner-mcp
+   npm install
+   npm audit
+   npm run build
+   ```
+
+### This release's dependency pins
+
+| Package | Pinned Version | Notes |
+|---|---|---|
+| `@modelcontextprotocol/sdk` | `1.29.0` | Patched ReDoS + DNS rebinding CVEs |
+| `axios` | `1.14.0` | Patched DoS CVE; `1.14.1` was malicious (supply chain attack) |
 
 ## License
 
