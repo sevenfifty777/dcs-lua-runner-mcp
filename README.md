@@ -299,6 +299,8 @@ Once the MCP server is running, you can ask your AI assistant to interact with D
 
 ## DCS Setup Requirements
 
+> ⚠️ **Security Notice**: Setting up DCS Fiddle requires disabling DCS sandboxing and, optionally, exposing a network port. Read [DCS_SetUp_Risks.md](DCS_SetUp_Risks.md) for a full risk assessment and mandatory security measures before proceeding.
+
 ### 1. DCS Fiddle Server Installation
 
 #### Step 1 — Locate your Saved Games folder
@@ -352,19 +354,14 @@ If you see this line the server is running and listening on ports **12080** (mis
 
 ### 2. DCS Desanitization
 
-⚠️ **Security Warning**: This requires removing DCS security restrictions.
+⚠️ **Security Warning**: This step disables DCS sandboxing and grants scripts full system access. See [DCS_SetUp_Risks.md](DCS_SetUp_Risks.md) for the full risk details and how to restore security afterwards.
 
-Edit `DCS_INSTALL\Scripts\MissionScripting.lua` and comment out these lines:
+Edit `DCS_INSTALL\Scripts\MissionScripting.lua` and comment out these two lines:
 
 ```lua
-do
-    sanitizeModule('os')
-    sanitizeModule('io')
-    sanitizeModule('lfs')
---  _G['require'] = nil      -- Comment this line
+--  _G['require'] = nil      -- comment this out
     _G['loadlib'] = nil
---  _G['package'] = nil      -- Comment this line
-end
+--  _G['package'] = nil      -- comment this out
 ```
 
 ### 3. Start DCS
