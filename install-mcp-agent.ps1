@@ -38,9 +38,10 @@
 
 [CmdletBinding()]
 param(
-    [string]   $ServerPath = "",
-    [int[]]    $AgentIds   = @(),
-    [switch]   $All
+    [string]   $ServerPath  = "",
+    [int[]]    $AgentIds    = @(),
+    [switch]   $All,
+    [switch]   $SkipAgents
 )
 
 Set-StrictMode -Version Latest
@@ -160,10 +161,35 @@ function Configure-Settings {
     if ($missionChoice -eq "yes" -or $missionChoice -eq "y") { $cfg["run_in_mission_env"] = $true }
     elseif ($missionChoice -eq "no"  -or $missionChoice -eq "n") { $cfg["run_in_mission_env"] = $false }
 
-    # ── Write file ─────────────────────────────────────────────────────────────
+    # ── Write settings file ────────────────────────────────────────────────────
     Write-Host ""
     $cfg | ConvertTo-Json -Depth 5 | Set-Content $settingsPath -Encoding UTF8
     Write-Host "  ✓ Saved: $settingsPath" -ForegroundColor Green
+    Write-Host ""
+
+    # ── Patch dcs-fiddle-server.lua ────────────────────────────────────────────
+    $luaPath = Join-Path $ScriptDir "dcs-fiddle-server.lua"
+    if (Test-Path $luaPath) {
+        $lua = Get-Content $luaPath -Raw -Encoding UTF8
+
+        # Determine bind IP: local → 127.0.0.1, remote → 0.0.0.0 (listen on all interfaces)
+        $runLocal = if ($cfg["run_code_locally"] -is [bool]) { $cfg["run_code_locally"] } else { [bool]::Parse($cfg["run_code_locally"]) }
+        $bindIp   = if ($runLocal) { '127.0.0.1' } else { '0.0.0.0' }
+
+        $lua = $lua -replace "(?m)^FIDDLE\.BIND_IP\s*=\s*'[^']*'",  "FIDDLE.BIND_IP = '$bindIp'"
+        $lua = $lua -replace "(?m)^FIDDLE\.PORT\s*=\s*\d+",          "FIDDLE.PORT = $($cfg['server_port'])"
+        $lua = $lua -replace "(?m)^FIDDLE\.USERNAME\s*=\s*'[^']*'",  "FIDDLE.USERNAME = '$($cfg['web_auth_username'])'"
+        $lua = $lua -replace "(?m)^FIDDLE\.PASSWORD\s*=\s*'[^']*'",  "FIDDLE.PASSWORD = '$($cfg['web_auth_password'])'"
+
+        Set-Content $luaPath $lua -Encoding UTF8
+        Write-Host "  ✓ Patched: $luaPath" -ForegroundColor Green
+        Write-Host "      BIND_IP  = $bindIp" -ForegroundColor DarkGray
+        Write-Host "      PORT     = $($cfg['server_port'])" -ForegroundColor DarkGray
+        Write-Host "      USERNAME = $($cfg['web_auth_username'])" -ForegroundColor DarkGray
+        Write-Host "      PASSWORD = ***" -ForegroundColor DarkGray
+    } else {
+        Write-Host "  ! dcs-fiddle-server.lua not found in script folder — skipping Lua patch." -ForegroundColor DarkYellow
+    }
     Write-Host ""
 }
 
@@ -219,14 +245,17 @@ $agents = @(
 # ── Select agents ──────────────────────────────────────────────────────────────
 $selected = @()
 
-if ($All) {
+if ($SkipAgents) {
+    Write-Host "Skipping agent registration (-SkipAgents)." -ForegroundColor DarkYellow
+    Write-Host ""
+} elseif ($All) {
     $selected = $agents
 } elseif ($AgentIds.Count -gt 0) {
     $selected = $agents | Where-Object { $_.Id -in $AgentIds }
 } else {
     # Interactive menu
     Write-Host "Which agents do you want to configure?" -ForegroundColor Yellow
-    Write-Host "(Enter one or more numbers separated by commas or spaces, or type 'all')" -ForegroundColor DarkGray
+    Write-Host "(Enter one or more numbers separated by commas or spaces, type 'all', or 'skip')" -ForegroundColor DarkGray
     Write-Host "  Example: 1,3,7  or  1 3 7" -ForegroundColor DarkGray
     Write-Host ""
 
@@ -242,19 +271,17 @@ if ($All) {
     }
 
     Write-Host ""
-    $raw = (Read-Host "Choice").Trim()
+    $raw = (Read-Host "Choice (or press Enter / type 'skip' to skip)").Trim()
 
     if ($raw -ieq "all") {
         $selected = $agents
+    } elseif ($raw -ieq "skip" -or $raw -eq "") {
+        Write-Host "Skipping agent registration." -ForegroundColor DarkYellow
+        Write-Host ""
     } else {
         $ids      = $raw -split "[,\s]+" | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ }
         $selected = $agents | Where-Object { $_.Id -in $ids }
     }
-}
-
-if ($selected.Count -eq 0) {
-    Write-Host "No valid selection. Exiting." -ForegroundColor Red
-    exit 0
 }
 
 Write-Host ""

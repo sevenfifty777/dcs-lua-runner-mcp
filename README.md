@@ -115,11 +115,13 @@ The release zip already contains the pre-built `build/index.js` — no Node.js b
    **Step 1 — DCS Server Settings**
    - Asks whether DCS runs on the same machine (local) or on a remote IP
    - Prompts for port, username, and password (current/template values shown in brackets — press Enter to keep)
-   - Saves the result to `dcs_lua_runner_settings.json`
+   - Saves the result to **`dcs_lua_runner_settings.json`**
+   - Also patches **`dcs-fiddle-server.lua`** with the same IP, port, username and password — no need to edit it separately
 
    **Step 2 — Agent Registration**
    - Shows a numbered menu of supported agents with their config status
    - Enter one or more numbers separated by commas or spaces, or type `all`
+   - Type `skip` (or press Enter with no input) to skip agent registration entirely
    - Patches each selected agent config file (creates the file if it doesn't exist yet)
 
    ```
@@ -139,6 +141,9 @@ The release zip already contains the pre-built `build/index.js` — no Node.js b
    >
    > # Configure all agents at once
    > .\install-mcp-agent.ps1 -All
+   >
+   > # Skip agent registration (only update settings + fiddle script)
+   > .\install-mcp-agent.ps1 -SkipAgents
    >
    > # Point to a build in a custom location
    > .\install-mcp-agent.ps1 -ServerPath "D:\tools\dcs-mcp\build\index.js"
@@ -168,11 +173,14 @@ The release zip already contains the pre-built `build/index.js` — no Node.js b
 
 4. **Configure settings and register agents:**
 
-   **Option A — Automatic (recommended):** Run the installer script, which handles both the settings file and agent registration:
+   **Option A — Automatic (recommended):** Run the installer script, which handles everything in one go:
    ```powershell
    .\install-mcp-agent.ps1
    ```
-   The script guides you through DCS server settings, then lets you pick which agents to configure from a numbered menu.
+   The script will:
+   - Prompt for DCS server settings and save `dcs_lua_runner_settings.json`
+   - Patch `dcs-fiddle-server.lua` with the same values automatically
+   - Let you pick which agents to register from a numbered menu (type `skip` to skip this step)
 
    **Option B — Manual:**
 
