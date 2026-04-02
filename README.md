@@ -98,17 +98,55 @@ The MCP server will automatically find and load the settings file from its own d
 
 ### Method 1: Direct Installation (Pre-built)
 
-If you received a pre-built version:
+The release zip already contains the pre-built `build/index.js` — no Node.js build step required.
 
-1. Extract the `dcs-lua-runner-mcp` folder to your preferred location
-2. Navigate to the folder and install dependencies:
-   ```bash
-   cd dcs-lua-runner-mcp
-   npm install
-   npm run build
+1. **Extract** the release zip (e.g. `dcs-lua-runner-mcp-v1.1.0.zip`) to your preferred location, e.g.:
    ```
-3. Create your settings file (copy from `dcs_lua_runner_settings.json.template`)
-4. Configure your MCP client (see Configuration section below)
+   C:\dcs-lua-runner-mcp\
+   ```
+
+2. **Run the installer script** — open PowerShell, navigate to the extracted folder and run:
+   ```powershell
+   .\install-mcp-agent.ps1
+   ```
+
+   The script walks you through two steps automatically:
+
+   **Step 1 — DCS Server Settings**
+   - Asks whether DCS runs on the same machine (local) or on a remote IP
+   - Prompts for port, username, and password (current/template values shown in brackets — press Enter to keep)
+   - Saves the result to `dcs_lua_runner_settings.json`
+
+   **Step 2 — Agent Registration**
+   - Shows a numbered menu of supported agents with their config status
+   - Enter one or more numbers separated by commas or spaces, or type `all`
+   - Patches each selected agent config file (creates the file if it doesn't exist yet)
+
+   ```
+   1. Claude Desktop
+   2. Cline (VS Code extension)
+   3. GitHub Copilot Chat (VS Code)
+   4. Cursor
+   5. Windsurf
+   6. Claude Code CLI
+   7. GitHub Copilot CLI
+   ```
+
+   > **Tip:** You can skip the interactive prompts entirely with flags:
+   > ```powershell
+   > # Configure specific agents (e.g. Copilot Chat + Cline)
+   > .\install-mcp-agent.ps1 -AgentIds 2,3
+   >
+   > # Configure all agents at once
+   > .\install-mcp-agent.ps1 -All
+   >
+   > # Point to a build in a custom location
+   > .\install-mcp-agent.ps1 -ServerPath "D:\tools\dcs-mcp\build\index.js"
+   > ```
+
+3. **Install the DCS server script** — copy `dcs-fiddle-server.lua` into your DCS mission scripts or into the DCS `Scripts` folder and load it (see [DCS Server Script Installation](#dcs-server-script-installation)).
+
+4. **Restart your agent** (reload VS Code, restart Claude Desktop, etc.) to apply the configuration changes.
 
 ### Method 2: Installation from GitHub
 
@@ -128,14 +166,21 @@ If you received a pre-built version:
    npm run build
    ```
 
-4. **Create settings file:**
-   
-   Copy `dcs_lua_runner_settings.json.template` to `dcs_lua_runner_settings.json` and update with your DCS server details:
+4. **Configure settings and register agents:**
+
+   **Option A — Automatic (recommended):** Run the installer script, which handles both the settings file and agent registration:
+   ```powershell
+   .\install-mcp-agent.ps1
+   ```
+   The script guides you through DCS server settings, then lets you pick which agents to configure from a numbered menu.
+
+   **Option B — Manual:**
+
+   Copy the template and fill in your DCS server details:
    ```bash
    cp dcs_lua_runner_settings.json.template dcs_lua_runner_settings.json
    ```
-   
-   Then edit `dcs_lua_runner_settings.json` with your settings:
+   Edit `dcs_lua_runner_settings.json`:
    ```json
    {
      "server_address": "127.0.0.1",
@@ -151,22 +196,10 @@ If you received a pre-built version:
    }
    ```
 
-5. **Configure your MCP client:**
+   Then update your agent's MCP config file to point to `build/index.js`.
+   Place `dcs_lua_runner_settings.json` in the same directory as the MCP server so it is found automatically.
 
-   You have two options for settings file location:
-
-   **Option A: Settings in MCP Server Directory (Recommended)**
-   
-   Place `dcs_lua_runner_settings.json` in the same directory as the MCP server. The server will automatically find it.
-
-   **For Cline (VS Code):**
-   
-   Edit `cline_mcp_settings.json` located at:
-   ```
-   %APPDATA%\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json
-   ```
-   
-   Add the server configuration:
+   **For Cline (VS Code)** — edit `%APPDATA%\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json`:
    ```json
    {
      "mcpServers": {
@@ -178,13 +211,7 @@ If you received a pre-built version:
    }
    ```
 
-   **For Claude Desktop:**
-   
-   Edit `claude_desktop_config.json` located at:
-   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   
-   Add the server configuration:
+   **For Claude Desktop** — edit `%APPDATA%\Claude\claude_desktop_config.json` (Windows) or `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
    ```json
    {
      "mcpServers": {
@@ -196,14 +223,33 @@ If you received a pre-built version:
    }
    ```
 
-   ---
+   **For GitHub Copilot Chat (VS Code)** — edit `%APPDATA%\Code\User\mcp.json`:
+   ```json
+   {
+     "servers": {
+       "dcs-lua-runner-mcp": {
+         "command": "node",
+         "args": ["C:/absolute/path/to/dcs-lua-runner-mcp/build/index.js"],
+         "type": "stdio"
+       }
+     }
+   }
+   ```
 
-   **Option B: Custom Settings Location**
-   
-   If you want to place `dcs_lua_runner_settings.json` in a different location (e.g., shared across multiple installations), use the `DCS_SETTINGS_PATH` environment variable.
+   **For GitHub Copilot CLI** — edit `%USERPROFILE%\.copilot\mcp-config.json`:
+   ```json
+   {
+     "mcpServers": {
+       "dcs-lua-runner-mcp": {
+         "command": "node",
+         "args": ["C:/absolute/path/to/dcs-lua-runner-mcp/build/index.js"],
+         "type": "stdio"
+       }
+     }
+   }
+   ```
 
-   **For Cline (VS Code):**
-   
+   **Custom settings path** — if `dcs_lua_runner_settings.json` lives elsewhere, pass its path via environment variable:
    ```json
    {
      "mcpServers": {
@@ -218,23 +264,9 @@ If you received a pre-built version:
    }
    ```
 
-   **For Claude Desktop:**
-   
-   ```json
-   {
-     "mcpServers": {
-       "dcs-lua-runner-mcp": {
-         "command": "node",
-         "args": ["C:/absolute/path/to/dcs-lua-runner-mcp/build/index.js"],
-         "env": {
-           "DCS_SETTINGS_PATH": "C:/custom/path/to/dcs_lua_runner_settings.json"
-         }
-       }
-     }
-   }
-   ```
+5. **Install the DCS server script** — copy `dcs-fiddle-server.lua` into your DCS mission scripts or into the DCS `Scripts` folder and load it (see [DCS Server Script Installation](#dcs-server-script-installation)).
 
-6. **Restart your MCP client** (VS Code or Claude Desktop)
+6. **Restart your agent** (reload VS Code, restart Claude Desktop, etc.)
 
 7. **Test the connection:**
    
@@ -502,6 +534,6 @@ For issues related to:
 - **DCS Connection**: Verify DCS Fiddle server installation
 - **Lua Execution**: Check DCS.log for detailed error messages
 
-## LoveHub
+## LobeHub
 
 [![MCP Badge](https://lobehub.com/badge/mcp/sevenfifty777-dcs-lua-runner-mcp)](https://lobehub.com/mcp/sevenfifty777-dcs-lua-runner-mcp)
