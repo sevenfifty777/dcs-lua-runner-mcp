@@ -15,7 +15,7 @@ FIDDLE.BIND_IP = '127.0.0.1'    -- Use '0.0.0.0' for remote access, default is '
 FIDDLE.AUTH = true              -- set to true to enable basic auth, recommended for public servers.
 FIDDLE.USERNAME = 'username'        -- username for basic auth
 FIDDLE.PASSWORD = 'password'        -- password for basic auth
-FIDDLE.BYPASS_LOCAL = true      -- allow requests to 127.0.0.1:12080-12081 without auth.
+FIDDLE.BYPASS_LOCAL = false      -- allow requests to 127.0.0.1:12080-12081 without auth.
 -- This local bypass allows DCS Fiddle website to still work. 
 -- It uses host header to determine if the request is local.
 -- This is not the most secure method and can be spoofed. Use with remote access at your own risk.

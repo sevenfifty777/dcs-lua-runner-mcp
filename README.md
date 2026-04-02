@@ -542,3 +542,7 @@ For issues related to:
 - **MCP Server**: Check the build output and MCP settings
 - **DCS Connection**: Verify DCS Fiddle server installation
 - **Lua Execution**: Check DCS.log for detailed error messages
+
+## LoveHub
+
+[![MCP Badge](https://lobehub.com/badge/mcp/sevenfifty777-dcs-lua-runner-mcp)](https://lobehub.com/mcp/sevenfifty777-dcs-lua-runner-mcp)

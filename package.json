@@ -2,6 +2,7 @@
   "name": "dcs-lua-runner",
   "version": "1.0.0",
   "description": "MCP server to interact with DCS environment",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "bin": {
