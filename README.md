@@ -116,7 +116,7 @@ The release zip already contains the pre-built `build/index.js` — no Node.js b
    - Asks whether DCS runs on the same machine (local) or on a remote IP
    - Prompts for port, username, and password (current/template values shown in brackets — press Enter to keep)
    - Saves the result to **`dcs_lua_runner_settings.json`**
-   - Also patches **`dcs-fiddle-server.lua`** with the same IP, port, username and password — no need to edit it separately
+   - Also patches **`dcs-fiddle-server.lua`** with IP, port, username and password — no need to edit it separately
 
    **Step 2 — Agent Registration**
    - Shows a numbered menu of supported agents with their config status
@@ -149,7 +149,7 @@ The release zip already contains the pre-built `build/index.js` — no Node.js b
    > .\install-mcp-agent.ps1 -ServerPath "D:\tools\dcs-mcp\build\index.js"
    > ```
 
-3. **Install the DCS server script** — copy `dcs-fiddle-server.lua` into your DCS mission scripts or into the DCS `Scripts` folder and load it (see [DCS Server Script Installation](#dcs-server-script-installation)).
+3. **Install the DCS server script** — copy `dcs-fiddle-server.lua` into your DCS mission scripts or into the DCS `Scripts\Hooks` folder and load it (see [DCS Server Script Installation](#dcs-server-script-installation)).
 
 4. **Restart your agent** (reload VS Code, restart Claude Desktop, etc.) to apply the configuration changes.
 
