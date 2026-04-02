@@ -559,9 +559,10 @@ return {x = vec3.x, z = vec3.z}
           throw new McpError(ErrorCode.InvalidParams, "Must provide either x/z, latitude/longitude, or mgrs coordinates");
         }
         
-        const coalitionId = coal === 'red' ? 'coalition.side.RED' : 
-                          coal === 'blue' ? 'coalition.side.BLUE' : 
-                          'coalition.side.NEUTRAL';
+        // country.id enum: RUSSIA=0, USA=2; determines coalition automatically
+        const countryEnum = coal === 'red' ? 'country.id.RUSSIA' : 
+                            coal === 'blue' ? 'country.id.USA' : 
+                            'country.id.INSURGENTS';
         
         const code = `
 local groupData = {
@@ -580,8 +581,7 @@ local groupData = {
   ["task"] = "Ground Nothing",
 }
 
-local country = coalition.getCountry(${coalitionId}, 1)
-coalition.addGroup(country, Group.Category.GROUND, groupData)
+coalition.addGroup(${countryEnum}, Group.Category.GROUND, groupData)
 
 return { success = true, message = "Unit ${unitName} spawned successfully" }
 `;
