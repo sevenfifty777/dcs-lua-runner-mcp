@@ -48,6 +48,16 @@ This MCP server provides the following tools for AI interaction with DCS:
    - Positions and altitudes
    - Coalition information
 
+9. **convert_coordinates** - Convert real-world coordinates to DCS
+   - Convert Lat/Long (decimal degrees) to DCS X/Z coordinates
+   - Optional altitude parameter
+   - Uses the theatre's native `coord.LLtoLO` DCS API
+
+10. **convert_dcs_to_ll** - Convert DCS coordinates to Lat/Long
+    - Convert DCS X/Z to real-world Latitude/Longitude
+    - Optional Y/altitude parameter
+    - Uses the theatre's native `coord.LOtoLL` DCS API
+
 ## Prerequisites
 
 1. **DCS World** installed with DCS Fiddle server running
@@ -279,14 +289,66 @@ Once the MCP server is running, you can ask your AI assistant to interact with D
 "What aircraft are currently in the mission?"
 ```
 
+### Convert Coordinates
+```
+"Convert latitude 41.123, longitude 44.987 to DCS coordinates"
+"What are the DCS X/Z coordinates for lat 51.5, lon 37.2?"
+"Convert DCS coordinates X=100000, Z=200000 to latitude/longitude"
+"What is the real-world position of the unit at DCS X=50000, Z=150000?"
+```
+
 ## DCS Setup Requirements
 
 ### 1. DCS Fiddle Server Installation
 
-Ensure the DCS Fiddle server script (`dcs-fiddle-server.lua`) is installed in:
+#### Step 1 — Locate your Saved Games folder
+
+DCS uses a folder under Windows `Saved Games` to store user scripts. The exact name depends on your DCS branch:
+
+| DCS Branch | Saved Games Folder |
+|---|---|
+| DCS World (stable) | `%USERPROFILE%\Saved Games\DCS` |
+| DCS World OpenBeta | `%USERPROFILE%\Saved Games\DCS.openbeta` |
+
+Open File Explorer and navigate to the correct path, e.g.:
 ```
-%USERPROFILE%\Saved Games\DCS\Scripts\Hooks\
+C:\Users\<YourUser>\Saved Games\DCS
 ```
+
+#### Step 2 — Create the Hooks folder (if it does not exist)
+
+Inside your Saved Games DCS folder, create the following folder structure if it is not already there:
+```
+Saved Games\DCS\Scripts\Hooks\
+```
+
+On Windows you can do this from PowerShell:
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\Saved Games\DCS\Scripts\Hooks"
+```
+> For OpenBeta replace `DCS` with `DCS.openbeta`.
+
+#### Step 3 — Copy the server script
+
+Copy `dcs-fiddle-server.lua` from this repository into the Hooks folder:
+```powershell
+Copy-Item ".\dcs-fiddle-server.lua" "$env:USERPROFILE\Saved Games\DCS\Scripts\Hooks\"
+```
+
+The final path should look like:
+```
+%USERPROFILE%\Saved Games\DCS\Scripts\Hooks\dcs-fiddle-server.lua
+```
+
+#### Step 4 — Verify the script is loaded
+
+After launching DCS, open `%USERPROFILE%\Saved Games\DCS\Logs\dcs.log` and search for:
+```
+DCS Fiddle successfully initialized
+```
+If you see this line the server is running and listening on ports **12080** (mission environment) and **12081** (GUI environment).
+
+> **Note**: The Hooks folder is loaded by DCS at startup for both the main menu (GUI environment) and in-mission. You do **not** need to add anything to `autoexec.cfg`.
 
 ### 2. DCS Desanitization
 
@@ -357,7 +419,7 @@ The MCP Inspector is a developer tool that allows you to test and debug your MCP
 3. **Using the Inspector:**
    - The inspector will open in your default web browser
    - You'll see an interactive GUI showing:
-     - **Available Tools**: List of all 8 DCS interaction tools
+     - **Available Tools**: List of all 10 DCS interaction tools
      - **Tool Parameters**: Input fields for each tool's parameters
      - **Request/Response**: Real-time display of MCP communication
      - **Test Results**: Output from each tool execution
