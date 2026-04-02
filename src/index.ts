@@ -463,23 +463,33 @@ return info
       
       case "get_player_info": {
         const code = `
-local player = world.getPlayer()
-if not player then
-  return { error = "No player found" }
+-- world.getPlayer() only works in SP; iterate all units to find any human pilot
+local found = nil
+for _, coa in ipairs({coalition.side.RED, coalition.side.BLUE, coalition.side.NEUTRAL}) do
+  local groups = coalition.getGroups(coa)
+  for _, grp in ipairs(groups) do
+    for _, u in ipairs(grp:getUnits()) do
+      if u:getPlayerName() and not found then
+        local pos = u:getPosition().p
+        local vel = u:getVelocity()
+        local speed = math.sqrt(vel.x^2 + vel.y^2 + vel.z^2)
+        local lat, lon, alt = coord.LOtoLL(pos)
+        found = {
+          name = u:getName(),
+          player = u:getPlayerName(),
+          type = u:getTypeName(),
+          position = { x = pos.x, y = pos.y, z = pos.z },
+          latitude = lat,
+          longitude = lon,
+          altitude = pos.y,
+          speed = speed,
+          heading = math.deg(math.atan2(vel.z, vel.x))
+        }
+      end
+    end
+  end
 end
-
-local pos = player:getPosition().p
-local vel = player:getVelocity()
-local speed = math.sqrt(vel.x^2 + vel.y^2 + vel.z^2)
-
-return {
-  name = player:getName(),
-  type = player:getTypeName(),
-  position = { x = pos.x, y = pos.y, z = pos.z },
-  altitude = pos.y,
-  speed = speed,
-  heading = math.deg(math.atan2(vel.z, vel.x))
-}
+return found or { error = "No player found" }
 `;
         const result = await dcsClient.runLua(code, executionSettings);
         
@@ -549,10 +559,9 @@ return units
         
         if (args?.mgrs) {
           // Convert MGRS to DCS coordinates
-          const mgrsStr = String(args.mgrs);
-          const escapedMgrs = mgrsStr.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'");
+          const mgrsStr = String(args.mgrs).replace(/\]/g, '').replace(/\[/g, ''); // sanitize for Lua long string
           const conversionCode = `
-local mgrsStr = "${escapedMgrs}"
+local mgrsStr = [[${mgrsStr}]]
 local mgrsClean = mgrsStr:gsub("%s+", "")
 
 -- Extract MGRS components
@@ -570,8 +579,8 @@ if not easting or not northing then
   return { error = "Invalid MGRS coordinates: " .. mgrsStr }
 end
 
-local eastingStr = string.format("%05d", easting * math.pow(10, 5 - halfLen))
-local northingStr = string.format("%05d", northing * math.pow(10, 5 - halfLen))
+local eastingStr = string.format("%05d", easting * (10 ^ (5 - halfLen)))
+local northingStr = string.format("%05d", northing * (10 ^ (5 - halfLen)))
 
 local mgrsTable = {
   UTMZone = zone .. band,
